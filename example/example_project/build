@@ -1,0 +1,3 @@
+zapper:
+  entry_point: hello_world.main:main
+  app_name: my_first_zipapp

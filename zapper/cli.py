@@ -100,9 +100,10 @@ def _read_build_file(src_path):
 
     # Possible names for the build file. 'build' and 'build.yml'
     #   seemed sensible enough.
-    possible_build_file_names = ['build', 'build.yml']
+    possible_build_file_names = ['build', 'build.yml', 'build.yaml']
 
     # Look for a file named either 'build' or 'build.yml'
+    build_file = None
     for build_file_name in possible_build_file_names:
         build_file_path = os.path.join(src_path, build_file_name)
         if file_exists(build_file_path):

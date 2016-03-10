@@ -1,0 +1,7 @@
+zapper:
+  - entry_point: zapper.cli:main
+    app_name: zapper.pyz
+    ignore:
+      - example
+      - bin
+

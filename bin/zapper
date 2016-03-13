@@ -44,7 +44,7 @@ if __name__ == '__main__':
         sys.exit(main())
     except KeyboardInterrupt:
         print('Stopping!')
-    except OSError as e:
-        print('OSError: {0}'.format(e))
+    except (IOError, OSError) as e:
+        print('Error: {0}'.format(e))
     except ValueError as e:
         print('Config Error: {0}'.format(e))

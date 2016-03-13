@@ -55,7 +55,11 @@ def _parse_args():
     # Set up our argument parser.
     parser = argparse.ArgumentParser(
         description='A tool to build python zipapps.',
-        usage='%(prog)s SRC_PATH [DEST_PATH]'
+        usage='%(prog)s SRC_PATH [DEST_PATH]',
+        epilog='NOTE: Any options specified on the command line will override ALL defined builds.'
+               'This means if you specify "app_name" on the command line, and you have multiple '
+               'builds specied in the "build_file", that "app_name" will be applied to all resulting '
+               'artifacts.'
     )
 
     parser.add_argument('src_path',
@@ -66,6 +70,26 @@ def _parse_args():
                         nargs='?',
                         type=str,
                         help='The desired destination.')
+    parser.add_argument('-b', '--build-file',
+                        type=argparse.FileType(),
+                        help='Path to a build file.')
+    parser.add_argument('-n', '--name',
+                        type=str,
+                        help='Specify a name for the application. By default basename is used.')
+    parser.add_argument('-e', '--entry-point',
+                        type=str,
+                        help='The entry point for the application.')
+    parser.add_argument('-r', '--requirements',
+                        type=str,
+                        help='Comma separated .ist of requirements. '
+                             'Prepend with an "@" sign to specify a requirements file')
+    parser.add_argument('--ignore',
+                        type=str,
+                        help='Comma separated list of files/directories to ignore.')
+    parser.add_argument('--leave-pyc',
+                        action='store_true',
+                        default=False,
+                        help='Toggles NOT cleaning out any pyc files.')
     parser.add_argument('-v', '--verbose',
                         action='store_true',
                         default=False,
@@ -83,19 +107,18 @@ def _parse_args():
     return args
 
 
-def _read_build_file(src_path):
+def _find_build_file(src_path):
     """
-    Read the 'build' file.
+    Search for a 'build' file.
 
     Args:
-        src_path (str):     The path to the source code.
+        src_path (str):     The path to the search.
 
     Returns:
-        dict containing contents of 'build' file.
+        str containing full path to a build file.
 
     Raises:
         ValueError if we can't find a build file.
-        ValueError if build file does not contain 'zapper' key.
     """
 
     # Possible names for the build file. 'build' and 'build.yml'
@@ -110,22 +133,79 @@ def _read_build_file(src_path):
             build_file = build_file_path
             break
 
-    # If the build file doesn't exist, bomb out.
-    if not build_file:
-        raise ValueError(
-            'Build file not found in source directory: {0}'.format(src_path))
+    # If we get here, and don't have a build file, just return None.
+    return build_file
 
-    # Read a build file located in the source path.
-    with open(build_file, 'r') as f:
-        build_data = yaml.load(f.read())
+
+def _read_build_file(build_file_path):
+    """
+    Read the 'build' file.
+
+    Args:
+        build_file_path (str):      The path to the build file
+
+    Returns:
+        dict containing contents of 'build' file.
+
+    Raises:
+        IOError if the provided build file doesn't exist.
+        ValueError if build file does not contain 'zapper' key.
+    """
+
+    # Check if we're given a file handle. If we are, just read it.
+    #   otherwise, do all our normal file operations.
+    if isinstance(build_file_path, file):
+        build_data = yaml.load(build_file_path.read())
+
+    else:
+        if not file_exists(build_file_path):
+            return {}
+
+        # Read a build file located in the source path.
+        with open(build_file_path, 'r') as f:
+            build_data = yaml.load(f.read())
 
     # We require that the build file have a zapper "root" key,
     #   so we'll raise a ValueError if it does not.
     if 'zapper' not in build_data:
-        raise ValueError('"{0}" does not contain a "zapper" key!'
-                         .format(src_path))
+        raise ValueError('"{0}" does not contain a "zapper" key!'.format(build_file_path))
 
     return build_data['zapper']
+
+
+def _parse_options_from_cmd_args(args):
+    """
+    Parse out build options from the command line.
+
+    Args:
+        args (Argparse obj):        The output of 'ArgumentParser.parse_args()'
+
+    Returns:
+        dict of options.
+    """
+
+    opts = {}
+    if args.name is not None:
+        opts['app_name'] = args.name
+
+    if args.entry_point is not None:
+        opts['entry_point'] = args.entry_point
+
+    if args.requirements is not None:
+        # Check if we're given a file.
+        if args.requirements.startswith('@'):
+            opts['requirements_txt'] = args.requirements
+        else:
+            # Try and break it apart.
+            opts['requirements'] = args.requirements.split(',')
+
+    if args.ignore is not None:
+        opts['ignore'] = args.ignore.split(',')
+
+    if args.leave_pyc:
+        opts['clean_pyc'] = False
+
+    return opts
 
 
 def _zap(src, dest, opts, verbose):
@@ -155,14 +235,25 @@ def main():
 
     # Gather up our arguments and options
     args = _parse_args()
-    zapper_opts = _read_build_file(args.src_path)
+
+    # Parse out our CLI options.
+    cli_opts = _parse_options_from_cmd_args(args)
+
+    # Get our config file.
+    zapper_opts = {}
+    if args.build_file:
+        zapper_opts = _read_build_file(args.build_file)
+    else:
+        build_file_path = _find_build_file(args.src_path)
+        zapper_opts = _read_build_file(build_file_path)
 
     # If we have multiple entries in the 'zapper' portion of
     #   the build config, loop through them all. Otherwise
     #   just run once.
     if isinstance(zapper_opts, list):
         for instance_opts in zapper_opts:
+            instance_opts.update(cli_opts)
             _zap(args.src_path, args.dest_path, instance_opts, args.verbose)
-
     else:
+        zapper_opts.update(cli_opts)
         _zap(args.src_path, args.dest_path, zapper_opts, args.verbose)

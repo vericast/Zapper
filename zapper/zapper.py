@@ -49,7 +49,7 @@ class Zapper(object):
     """
 
     # The Standard Python Shebang header.
-    python_shebang = '#!/usr/bin/env python'
+    default_python_shebang = '#!/usr/bin/env python'
 
     # List to keep track of any files we create.
     files_created = []
@@ -57,6 +57,7 @@ class Zapper(object):
     def __init__(self,
                  src_directory,
                  entry_point,
+                 python_shebang=None,
                  dest=None,
                  app_name=None,
                  requirements=None,
@@ -82,6 +83,7 @@ class Zapper(object):
             ValueError when unable to resolve 'app_name'.
         """
 
+        self.python_shebang = python_shebang or self.default_python_shebang
         self.src_directory = src_directory
         self.dest = dest
         self.entry_point = entry_point

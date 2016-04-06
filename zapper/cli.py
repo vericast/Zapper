@@ -90,6 +90,9 @@ def _parse_args():
                         action='store_true',
                         default=False,
                         help='Toggles NOT cleaning out any pyc files.')
+    parser.add_argument('--python-shebang',
+                        type=str,
+                        help='Specify a nonstandard python-shebang.')
     parser.add_argument('-v', '--verbose',
                         action='store_true',
                         default=False,
@@ -205,6 +208,9 @@ def _parse_options_from_cmd_args(args):
     if args.leave_pyc:
         opts['clean_pyc'] = False
 
+    if args.python_shebang:
+        opts['python_shebang'] = args.python_shebang
+
     return opts
 
 
@@ -218,6 +224,7 @@ def _zap(src, dest, opts, verbose):
 
     zapper = Zapper(src_directory=src,
                     dest=dest,
+                    python_shebang=opts.get('python_shebang'),
                     entry_point=opts.get('entry_point'),
                     app_name=opts.get('app_name'),
                     requirements=opts.get('requirements'),

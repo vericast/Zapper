@@ -46,6 +46,7 @@ Here's a list of all the current supported options:
 zapper:
   entry_point: module.path:entry_point comma,separated,parameters
   app_name: over_write_default_app_name
+  python_shebang: #!/usr/bin/env/python # Defaults to "#!/usr/bin/env python"
   requirements:
     - list
     - of

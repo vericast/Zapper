@@ -54,6 +54,9 @@ def file_exists(fpath):
         fpath (str):        The file path to check.
     """
 
+    if fpath is None:
+        return False
+
     if os.path.exists(fpath) and os.access(fpath, os.R_OK):
         return True
 

@@ -243,8 +243,15 @@ class Zapper(object):
             OSError if Pip is not installed.
         """
 
+        # On windows, pip is 'pip.exe', but everywhere else its pip.
+        if os.name == 'posix':
+            pip_name = 'pip'
+        else:
+            pip_name = 'pip.exe'
+
         # Test if Pip is installed and bomb if it's not.
-        if not which('pip'):
+        pip_cmd = which(pip_name)
+        if not pip_cmd:
             raise OSError('Required program "pip" not installed!')
 
         # Check if our vendor path exists, and if it doesn't,

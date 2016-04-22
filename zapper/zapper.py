@@ -89,6 +89,11 @@ class Zapper(object):
         self.entry_point = entry_point
         self.requirements = requirements
         self.debug = debug
+        self.dest = dest or os.path.dirname(self.src_directory)
+        self.app_name = app_name or self._deduce_app_name()
+        self.ignore = ignore or ['venv', 'env']  # Standard generic virtualenv names.
+        self.clean_pyc = clean_pyc
+        self.vendor_path = os.path.join(src_directory, 'vendor')
 
         # If we're given a path to a requirements.txt file, ensure we have
         #   an absolute path.
@@ -103,46 +108,10 @@ class Zapper(object):
             self.requirements_txt = os.path.join(self.src_directory, 'requirements.txt')
 
         self._debug('requirements_txt set to: "{0}"'.format(self.requirements_txt))
-
-        # If ignore is not set, we'll at least check for standard
-        #   virtualenvironment names.
-        if not ignore:
-            self.ignore = ['venv', 'env']  # Standard generic virtualenv names.
-        else:
-            self.ignore = ignore
-
         self._debug('ignore set to: "{0}"'.format(self.ignore))
-
-        # If a dest is not provided, just go one level up from the
-        #   src_directory.
-        if not dest:
-            self.dest = os.path.dirname(self.src_directory)
-        else:
-            self.dest = dest
-
         self._debug('dest set to: "{0}"'.format(self.dest))
-
-        # If we haven't specified the app_name, try to resolve one
-        #   from the directory name.
-        if not app_name:
-            if self.src_directory.endswith('/'):
-                tmp_src_directory = self.src_directory[:-1]
-            else:
-                tmp_src_directory = self.src_directory
-
-            self.app_name = '{0}.pyz'.format(os.path.basename(tmp_src_directory))
-            if not self.app_name:
-                raise ValueError('Unable to figure out app name!')
-
-        else:
-            self.app_name = app_name
-
         self._debug('app name set to: "{0}"'.format(self.app_name))
-
         self.dest_path = os.path.join(self.dest, self.app_name)
-
-        self.clean_pyc = clean_pyc
-        self.vendor_path = os.path.join(src_directory, 'vendor')
 
     def __del__(self):
         """
@@ -161,6 +130,36 @@ class Zapper(object):
 
         if self.debug:
             print(msg)
+
+    def _deduce_app_name(self):
+        """
+        If an app name is not provided, try and figure one out.
+        """
+
+        # Check and see if we can use the destination as a valid
+        #   name.
+        use_dest = True
+        if file_exists(self.dest) and os.path.isdir(self.dest):
+            use_dest = False
+        elif file_exists(self.dest) and os.path.isfile(self.dest):
+            # Confirm overwrite
+            use_dest = True
+
+        if use_dest:
+            app_name = os.path.basename(self.dest)
+            self.dest = os.path.dirname(self.dest)
+        else:
+            if self.src_directory.endswith('/'):
+                tmp_src_directory = self.src_directory[:-1]
+            else:
+                tmp_src_directory = self.src_directory
+
+            app_name = '{0}.pyz'.format(os.path.basename(tmp_src_directory))
+
+        if not app_name:
+            raise ValueError('Unable to deduce app name!')
+
+        return app_name
 
     def _prepend_shebang(self):
         """

@@ -268,7 +268,7 @@ class Zapper(object):
             self._debug('Requrements List provided.')
             for requirement in self.requirements:
                 cmd = [
-                    'pip',
+                    pip_cmd,
                     'install',
                     '{0}'.format(requirement),
                     '--target={0}'.format(self.vendor_path),

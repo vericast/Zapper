@@ -57,6 +57,11 @@ def add_vendor_directories():
     # Save the state of our current path.
     prev_sys_path = list(sys.path)
 
+    # The first item in 'sys.path' is the directory fo the module,
+    #   generally that isn't super useful for zipapps, but it's come
+    #   to my attention that people like having it there.
+    my_path = prev_sys_path[0]
+
     # List of paths we want prepended to syspath.
     paths_to_add = [
         os.path.join(get_path(__file__), 'vendor')
@@ -82,7 +87,7 @@ def add_vendor_directories():
             sys.path.remove(path)
 
     # Prepend our re-ordered path.
-    sys.path[:0] = new_sys_path
+    sys.path[:0] = [my_path] + new_sys_path
 
 
 if __name__ == '__main__':

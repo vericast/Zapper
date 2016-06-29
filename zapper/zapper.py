@@ -31,9 +31,10 @@ from __future__ import absolute_import
 
 import os
 import zipfile
+import subprocess
 from shutil import rmtree
 
-from zapper.utils import render_template, file_exists, shell_out, list_files, which
+from zapper.utils import render_template, file_exists, list_files, which
 
 # Check if the user has zlib installed
 try:
@@ -41,6 +42,10 @@ try:
     has_zlib = True
 except ImportError:
     has_zlib = False
+
+
+class ZapperError(Exception):
+    pass
 
 
 class Zapper(object):
@@ -157,7 +162,7 @@ class Zapper(object):
             app_name = '{0}.pyz'.format(os.path.basename(tmp_src_directory))
 
         if not app_name:
-            raise ValueError('Unable to deduce app name!')
+            raise ZapperError('Unable to deduce app name!')
 
         return app_name
 
@@ -207,10 +212,10 @@ class Zapper(object):
         try:
             module_path, entry_point = self.entry_point.split(':')
         except ValueError:
-            raise ValueError('"{0}" is a malformed entry point! '
-                             'It should be formatted like: '
-                             '"module_name:main_function"'
-                             .format(self.entry_point))
+            raise ZapperError('"{0}" is a malformed entry point! '
+                              'It should be formatted like: '
+                              '"module_name:main_function"'
+                              .format(self.entry_point))
 
         self._debug('Module Path: "{0}"\nEntry Point: "{1}"'
                     .format(module_path, entry_point))
@@ -251,7 +256,7 @@ class Zapper(object):
         # Test if Pip is installed and bomb if it's not.
         pip_cmd = which(pip_name)
         if not pip_cmd:
-            raise OSError('Required program "pip" not installed!')
+            raise ZapperError('Required program "pip" not installed!')
 
         # Check if our vendor path exists, and if it doesn't,
         #   create it. This way if a project already has one,
@@ -277,7 +282,12 @@ class Zapper(object):
                 self._debug('Installing "{0}"" with command "{1}"'
                             .format(requirement, self.vendor_path))
 
-                output = shell_out(cmd)
+                try:
+                    output = subprocess.check_output(cmd)
+                except subprocess.CalledProcessError as e:
+                    raise ZapperError(
+                        'Failed while installing dependencies! Error: "{0}"'
+                        .format(e))
                 self._debug('{0}'.format(output))
 
         # If a requirements.txt file is provided, feed it to 'pip'
@@ -298,7 +308,12 @@ class Zapper(object):
 
             self._debug('Running command: "{0}"'.format(cmd))
 
-            output = shell_out(cmd)
+            try:
+                output = subprocess.check_output(cmd)
+            except subprocess.CalledProcessError as e:
+                raise ZapperError(
+                    'Failed while installing dependencies! Error: "{0}"'
+                    .format(e))
             self._debug('{0}'.format(output))
 
     def _ignored(self, fpath):

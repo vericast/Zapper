@@ -37,7 +37,7 @@ import argparse
 
 import yaml
 
-from zapper.zapper import Zapper  # Now THAT'S an import
+from zapper.zapper import Zapper
 from zapper.utils import file_exists
 
 
@@ -232,7 +232,7 @@ def _zap(src, dest, opts, verbose):
                     ignore=opts.get('ignore'),
                     clean_pyc=opts.get('clean_pyc'),
                     debug=verbose)
-    zapper.build()
+    return zapper
 
 
 def main():
@@ -260,7 +260,9 @@ def main():
     if isinstance(zapper_opts, list):
         for instance_opts in zapper_opts:
             instance_opts.update(cli_opts)
-            _zap(args.src_path, args.dest_path, instance_opts, args.verbose)
+            zapper = _zap(args.src_path, args.dest_path, instance_opts, args.verbose)
     else:
         zapper_opts.update(cli_opts)
-        _zap(args.src_path, args.dest_path, zapper_opts, args.verbose)
+        zapper = _zap(args.src_path, args.dest_path, zapper_opts, args.verbose)
+
+    zapper.build()

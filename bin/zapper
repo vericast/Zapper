@@ -36,6 +36,8 @@ from __future__ import absolute_import
 import sys
 
 from zapper.cli import main
+from zapper.zapper import ZapperError
+from zapper.utils import print_err
 
 
 if __name__ == '__main__':
@@ -43,8 +45,11 @@ if __name__ == '__main__':
     try:
         sys.exit(main())
     except KeyboardInterrupt:
-        print('Stopping!')
-    except (IOError, OSError) as e:
-        print('Error: {0}'.format(e))
+        print_err('Stopping!')
+        sys.exit(1)
+    except (IOError, OSError, ZapperError) as e:
+        print_err('Error: {0}'.format(e))
+        sys.exit(1)
     except ValueError as e:
-        print('Config Error: {0}'.format(e))
+        print_err('Config Error: {0}'.format(e))
+        sys.exit(1)

@@ -24,9 +24,10 @@
 """
 utils.py -- Conveincence functions for zapper.
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import os
+import sys
 import subprocess
 
 from jinja2 import Environment, PackageLoader, TemplateNotFound, UndefinedError
@@ -123,21 +124,6 @@ def render_template(template_name, **kwargs):
     return template_data
 
 
-def shell_out(cmd):
-    """
-    Run a shell command.
-
-    Args:
-        cmd (list):         A pre-tokenized command to run.
-    """
-
-    pid = subprocess.Popen(cmd,
-                           stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE)
-
-    return pid.communicate()
-
-
 def file_executable(fpath):
     """
     Check if a provided file path exists and is executable.
@@ -176,3 +162,13 @@ def which(program):
                 return exe_file
 
     return None
+
+
+def print_err(*args, **kwargs):
+    """
+    Print to stderr
+    Args:
+        *args to pass down to print function.
+        *kwargs to pass down to print function.
+    """
+    print(*args, file=sys.stderr, **kwargs)
